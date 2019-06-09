@@ -2,6 +2,17 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
+const knex = require('knex');
+
+const db = knex({
+  client: 'pg',
+  connection: {
+    host : '127.0.0.1',
+    user : 'postgres',
+    password : 'Ryan!219',
+    database : 'recognize'
+  }
+});
 
 const app = express();
 
@@ -50,19 +61,17 @@ app.post('/signin', (req, res) => {
 
 app.post('/register', (req, res) => {
 	const { email, name, password } = req.body;
-	bcrypt.hash(password, null, null, function(err, hash) { //hash function takes string and jumbles it up
-    console.log(hash);
-});
-
-	database.users.push({
-			id: '125',
-			name: name,
+	db('users')
+		.returning('*')
+		.insert({
 			email: email,
-			password: password,
-			entries: 0,
-			joined: new Date()		
+			name: name,
+			joined: new Date()
 	})
-	res.json(database.users[database.users.length-1]); //grabs the last item in the array which will be the new user
+		.then(user => {
+			res.json(user[0]); //when resgistering a user, it returns an array. user[0] returns the first object in the array
+		})
+		.catch(err => res.status(400).json('unable to register')) //we don't want the user to know what the error exactly is for security reasons
 })
 
 app.get('/profile/:id', (req, res) => {
